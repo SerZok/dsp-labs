@@ -94,45 +94,63 @@ QVector<double> ConvolutionAlgorithms::overlapSave(const QVector<double>& s, con
         return {};
     }
 
-    int N = s.size();
-    int M = h.size();
-    int resultSize = N + M - 1;
+    const QVector<double>* signal;
+    const QVector<double>* filter;
 
+    if (s.size() >= h.size()) {
+        signal = &s;
+        filter = &h;
+    }
+    else {
+        signal = &h;
+        filter = &s;
+    }
+
+    int N = signal->size();
+    int M = filter->size();
+    int L = blockSize;
+
+    int resultSize = N + M - 1;
     if (resultSize <= 0) {
         return {};
     }
 
     QVector<double> result(resultSize, 0.0);
+
     QVector<double> padded(M - 1 + N, 0.0);
     for (int i = 0; i < N; ++i) {
-        if (M - 1 + i < padded.size()) {
-            padded[M - 1 + i] = s[i];
-        }
+        padded[M - 1 + i] = (*signal)[i];
     }
 
     int pos = 0;
     int outputPos = 0;
 
-    while (pos < N) {
-        int currentSize = std::min(blockSize, N - pos);
+    while (pos < padded.size()) {
+        int blockLength = L + M - 1;
+        QVector<double> block(blockLength, 0.0);
 
-        if (currentSize <= 0) break;
-
-        QVector<double> block(blockSize + M - 1, 0.0);
-        for (int i = 0; i < block.size(); ++i) {
+        for (int i = 0; i < blockLength; ++i) {
             if (pos + i < padded.size()) {
                 block[i] = padded[pos + i];
             }
         }
 
-        QVector<double> conv = linear(block, h);
+        QVector<double> conv = linear(block, *filter);
+        int validStart = M - 1;
+        int validCount = qMin(L, conv.size() - validStart);
 
-        for (int i = M - 1; i < M - 1 + currentSize; ++i) {
-            if (i < conv.size() && outputPos < result.size()) {
-                result[outputPos++] = conv[i];
+        for (int i = 0; i < validCount; ++i) {
+            if (outputPos < result.size()) {
+                result[outputPos++] = conv[validStart + i];
             }
         }
-        pos += currentSize;
+
+        pos += L;
+
+        if (pos >= padded.size() && outputPos >= resultSize) {
+            break;
+        }
     }
+
     return result;
 }

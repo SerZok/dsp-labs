@@ -8,7 +8,14 @@
       "buildRoot": "${projectDir}\\out\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
       "cmakeCommandArgs": "",
-      "ctestCommandArgs": ""
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "Qt6_DIR",
+          "value": "C:\\Qt\\6.10.2\\msvc2022_64\\lib\\cmake\\Qt6",
+          "type": "PATH"
+        }
+      ]
     },
     {
       "name": "x64-Release",

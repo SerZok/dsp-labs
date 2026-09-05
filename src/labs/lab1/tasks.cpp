@@ -66,7 +66,6 @@ QWidget* Task1Linear::createWidget(QWidget* parent) {
     auto compute = [=]() {
         QVector<double> s = parseSequence(sEdit->text());
         QVector<double> h = parseSequence(hEdit->text());
-        if (s.isEmpty() || h.isEmpty()) return;
 
         auto result = ConvolutionAlgorithms::linear(s, h);
         resultEdit->setText(toString(result));
@@ -116,7 +115,6 @@ QWidget* Task2Circular::createWidget(QWidget* parent) {
     auto compute = [=]() {
         QVector<double> s = parseSequence(sEdit->text());
         QVector<double> h = parseSequence(hEdit->text());
-        if (s.isEmpty() || h.isEmpty()) return;
 
         auto result = ConvolutionAlgorithms::circular(s, h);
         resultEdit->setText(toString(result));
@@ -150,14 +148,10 @@ QWidget* Task3OverlapAdd::createWidget(QWidget* parent) {
     auto* formWidget = new QWidget;
     auto* sEdit = new QLineEdit("5, 2, 1, 2");
     auto* hEdit = new QLineEdit("5, 6, 1, 8, -5, 2, -4, 1, 2, 8, 6, 7, 1, 3, -3, 5, 2, 3");
-    auto* blockSpin = new QSpinBox;
-    blockSpin->setRange(1, 20);
-    blockSpin->setValue(4);
 
     auto* formLayout = new QFormLayout(formWidget);
     formLayout->addRow("s(n):", sEdit);
     formLayout->addRow("h(n):", hEdit);
-    formLayout->addRow("Размер блока:", blockSpin);
     formLayout->addRow("Результат:", resultEdit);
 
     auto* splitter = new QSplitter(Qt::Vertical);
@@ -170,10 +164,8 @@ QWidget* Task3OverlapAdd::createWidget(QWidget* parent) {
     auto compute = [=]() {
         QVector<double> s = parseSequence(sEdit->text());
         QVector<double> h = parseSequence(hEdit->text());
-        int blockSize = blockSpin->value();
-        if (s.isEmpty() || h.isEmpty()) return;
 
-        auto result = ConvolutionAlgorithms::overlapAdd(s, h, blockSize);
+        auto result = ConvolutionAlgorithms::overlapAdd(s, h, 4);
         resultEdit->setText(toString(result));
         plotWidget->plotSequences(s, h, result, "s(n)", "h(n)", "Результат");
         };
@@ -182,7 +174,6 @@ QWidget* Task3OverlapAdd::createWidget(QWidget* parent) {
 
     QObject::connect(sEdit, &QLineEdit::textChanged, widget, compute);
     QObject::connect(hEdit, &QLineEdit::textChanged, widget, compute);
-    QObject::connect(blockSpin, QOverload<int>::of(&QSpinBox::valueChanged), widget, compute);
 
     return widget;
 }
@@ -206,14 +197,10 @@ QWidget* Task4OverlapSave::createWidget(QWidget* parent) {
     auto* formWidget = new QWidget;
     auto* sEdit = new QLineEdit("5, 2, 1, 2");
     auto* hEdit = new QLineEdit("5, 6, 1, 8, -5, 2, -4, 1, 2, 8, 6, 7, 1, 3, -3, 5, 2, 3");
-    auto* blockSpin = new QSpinBox;
-    blockSpin->setRange(1, 20);
-    blockSpin->setValue(4);
 
     auto* formLayout = new QFormLayout(formWidget);
     formLayout->addRow("s(n):", sEdit);
     formLayout->addRow("h(n):", hEdit);
-    formLayout->addRow("Размер блока:", blockSpin);
     formLayout->addRow("Результат:", resultEdit);
 
     auto* splitter = new QSplitter(Qt::Vertical);
@@ -226,10 +213,8 @@ QWidget* Task4OverlapSave::createWidget(QWidget* parent) {
     auto compute = [=]() {
         QVector<double> s = parseSequence(sEdit->text());
         QVector<double> h = parseSequence(hEdit->text());
-        int blockSize = blockSpin->value();
-        if (s.isEmpty() || h.isEmpty()) return;
 
-        auto result = ConvolutionAlgorithms::overlapSave(s, h, blockSize);
+        auto result = ConvolutionAlgorithms::overlapSave(s, h, 4);
         resultEdit->setText(toString(result));
         plotWidget->plotSequences(s, h, result, "s(n)", "h(n)", "Результат");
         };
@@ -238,7 +223,6 @@ QWidget* Task4OverlapSave::createWidget(QWidget* parent) {
 
     QObject::connect(sEdit, &QLineEdit::textChanged, widget, compute);
     QObject::connect(hEdit, &QLineEdit::textChanged, widget, compute);
-    QObject::connect(blockSpin, QOverload<int>::of(&QSpinBox::valueChanged), widget, compute);
 
     return widget;
 }
