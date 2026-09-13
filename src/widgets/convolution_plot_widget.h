@@ -1,7 +1,7 @@
 #pragma once
 #include <QWidget>
 #include <QVBoxLayout>
-#include "../libs/qcustomplot/qcustomplot.h"
+#include "qcustomplot.h"
 
 class ConvolutionPlotWidget : public QWidget {
     Q_OBJECT
@@ -14,6 +14,12 @@ public:
         const QString& labelResult);
     void clear();
 
+public slots:
+    void autoScale();
+
 private:
     QCustomPlot* plot_;
+
+    QCPGraph* addStemGraph(const QVector<double>& x, const QVector<double>& y,
+        const QColor& color, const QString& name);
 };
