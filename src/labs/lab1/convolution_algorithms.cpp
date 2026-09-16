@@ -32,19 +32,20 @@ QVector<double> ConvolutionAlgorithms::circular(const QVector<double>& s, const 
         return {};
     }
 
-    if (s.size() != h.size()) {
-        return {};
-    }
+    int N = qMax(s.size(), h.size());
 
-    int N = s.size();
+    QVector<double> s_padded = s;
+    QVector<double> h_padded = h;
+
+    s_padded.resize(N, 0.0);
+    h_padded.resize(N, 0.0);
+
     QVector<double> result(N, 0.0);
 
     for (int n = 0; n < N; ++n) {
         for (int k = 0; k < N; ++k) {
             int idx = (n - k + N) % N;
-            if (idx >= 0 && idx < N && k < h.size()) {
-                result[n] += s[idx] * h[k];
-            }
+            result[n] += s_padded[idx] * h_padded[k];
         }
     }
     return result;
