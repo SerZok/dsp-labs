@@ -94,25 +94,24 @@ void SpectrumPlotWidget::plotTimeDomain(const QVector<double>& x, const QVector<
     analogGraph->setData(analogX, analogY);
     analogGraph->setLineStyle(QCPGraph::lsLine);  // Сплошная линия
     analogGraph->setPen(QPen(QColor(0, 114, 189, 150), 1.5));  // Полупрозрачный синий
-    analogGraph->setName("Аналоговый сигнал");
+    analogGraph->setName(title);
 
     // === 2. Рисуем дискретные отсчёты (поверх аналогового) ===
     QCPGraph* discreteGraph = timePlot_->addGraph();
     discreteGraph->setData(x, y);
-    discreteGraph->setLineStyle(QCPGraph::lsNone);  // Без линий
+    discreteGraph->setLineStyle(QCPGraph::lsNone);
     discreteGraph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle,
         QColor(217, 83, 25),
-        QColor(255, 255, 255),  // Белая обводка
-        6));  // Размер маркера
-    discreteGraph->setName("Дискретные отсчёты");
+        QColor(255, 255, 255),
+        6));
+    discreteGraph->removeFromLegend();
 
     // === 3. Вертикальные линии от оси X до точек (опционально) ===
-    // Можно добавить для наглядности, как в stem plot
     QCPGraph* stemGraph = timePlot_->addGraph();
     stemGraph->setData(x, y);
     stemGraph->setLineStyle(QCPGraph::lsImpulse);
-    stemGraph->setPen(QPen(QColor(217, 83, 25, 100), 1.0));  // Очень прозрачный
-    stemGraph->setName("");  // Не показывать в легенде
+    stemGraph->setPen(QPen(QColor(217, 83, 25, 100), 1.0));
+    stemGraph->removeFromLegend();
 
     // Настройка осей
     timePlot_->xAxis->setRange(xMin - 0.5, xMax + 0.5);

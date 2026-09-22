@@ -124,7 +124,7 @@ QWidget* Task1DirectFft::createWidget(QWidget* parent) {
         double elapsedMs = elapsedNs / 1000000.0;
         timeLabel->setText(QString("Время расчёта БПФ (N=%1): %2 мс").arg(N).arg(elapsedMs, 0, 'f', 4));
 
-        spectrumWidget->plotTimeDomain(timeAxis, signal, QString("Y = cos(%1·x) + sin(%2·x), N = %3").arg(freq1).arg(freq2).arg(N));
+        spectrumWidget->plotTimeDomain(timeAxis, signal, QString("Y = cos(%1x) + sin(%2x)").arg(freq1).arg(freq2).arg(N));
         spectrumWidget->plotSpectrum(fftResult);
         };
 
