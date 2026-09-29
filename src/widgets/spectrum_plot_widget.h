@@ -15,7 +15,7 @@ public:
         int analogResolution = 1000);  // Точки для плавной кривой
 
     // Показать спектр (амплитудный и фазовый)
-    void plotSpectrum(const FftResult& fftResult, double sampleRate = 1.0);
+    void plotSpectrum(const FftResult& fftResult, double sampleRate = 1.0, bool singleSided = true);
 
     // Очистить оба графика
     void clear();

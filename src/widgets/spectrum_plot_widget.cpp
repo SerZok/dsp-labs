@@ -129,25 +129,22 @@ void SpectrumPlotWidget::plotTimeDomain(const QVector<double>& x, const QVector<
     timePlot_->replot();
 }
 
-void SpectrumPlotWidget::plotSpectrum(const FftResult& fftResult, double sampleRate) {
-    Q_UNUSED(sampleRate);
-
+void SpectrumPlotWidget::plotSpectrum(const FftResult& fftResult, double sampleRate, bool singleSided) {
     if (fftResult.N == 0) return;
 
-    // Берём только первую половину спектра (0 до N/2)
-    int halfN = fftResult.N / 2 + 1;
+    // Если singleSided = false, берём весь спектр 0...N-1 (как в Python)
+    int plotSize = singleSided ? (fftResult.N / 2 + 1) : fftResult.N;
 
-    QVector<double> freqAxis(halfN);
-    QVector<double> magnitude(halfN);
-    QVector<double> phase(halfN);
+    QVector<double> freqAxis(plotSize);
+    QVector<double> magnitude(plotSize);
+    QVector<double> phase(plotSize);
 
-    QVector<double> normMag = fftResult.normalizedMagnitude();
-    QVector<double> fullPhase = fftResult.phase();
-
-    for (int i = 0; i < halfN; ++i) {
+    for (int i = 0; i < plotSize; ++i) {
         freqAxis[i] = fftResult.frequencyAxis[i];
-        magnitude[i] = normMag[i];
-        phase[i] = fullPhase[i];
+
+        magnitude[i] = std::abs(fftResult.spectrum[i]) / fftResult.N;
+
+        phase[i] = (magnitude[i] < 1e-10) ? 0.0 : std::arg(fftResult.spectrum[i]);
     }
 
     // === Амплитудный спектр ===
@@ -156,38 +153,30 @@ void SpectrumPlotWidget::plotSpectrum(const FftResult& fftResult, double sampleR
     magGraph->setData(freqAxis, magnitude);
     magGraph->setLineStyle(QCPGraph::lsImpulse);
     magGraph->setPen(QPen(QColor(217, 83, 25), 1.5));
-    magGraph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle,
-        QColor(217, 83, 25), QColor(217, 83, 25), 5));
-    magGraph->setName("Амплитудный спектр");
+    magGraph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QColor(217, 83, 25), QColor(217, 83, 25), 6));
+    magGraph->setName("Амплитуда (|F|/N)");
     magnitudePlot_->legend->setVisible(true);
 
-    magnitudePlot_->xAxis->setRange(-0.5, halfN - 0.5);
-    magnitudePlot_->rescaleAxes();
-    magnitudePlot_->yAxis->setRangeLower(0);
+    magnitudePlot_->xAxis->setRange(-0.5, plotSize - 0.5);
+    magnitudePlot_->yAxis->setRange(0, 1.1);
 
     QSharedPointer<QCPAxisTickerFixed> magTicker(new QCPAxisTickerFixed);
     magTicker->setTickStep(1.0);
     magnitudePlot_->xAxis->setTicker(magTicker);
-
     magnitudePlot_->replot();
 
-    // === Фазовый спектр ===
     phasePlot_->clearGraphs();
     QCPGraph* phGraph = phasePlot_->addGraph();
     phGraph->setData(freqAxis, phase);
     phGraph->setLineStyle(QCPGraph::lsImpulse);
     phGraph->setPen(QPen(QColor(126, 47, 142), 1.5));
-    phGraph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle,
-        QColor(126, 47, 142), QColor(126, 47, 142), 5));
-    phGraph->setName("Фазовый спектр");
+    phGraph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, QColor(126, 47, 142), QColor(126, 47, 142), 6));
+    phGraph->setName("Фаза");
     phasePlot_->legend->setVisible(true);
 
-    phasePlot_->xAxis->setRange(-0.5, halfN - 0.5);
+    phasePlot_->xAxis->setRange(-0.5, plotSize - 0.5);
     phasePlot_->yAxis->setRange(-M_PI - 0.3, M_PI + 0.3);
-
-    QSharedPointer<QCPAxisTickerFixed> phTicker(new QCPAxisTickerFixed);
-    phTicker->setTickStep(1.0);
-    phasePlot_->xAxis->setTicker(phTicker);
+    phasePlot_->yAxis->setTicker(QSharedPointer<QCPAxisTickerPi>(new QCPAxisTickerPi));
 
     phasePlot_->replot();
 }

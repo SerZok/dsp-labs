@@ -9,11 +9,14 @@
 #include <QFormLayout>
 #include <QLineEdit>
 #include <QSpinBox>
+#include <QDoubleSpinBox>
 #include <QSplitter>
 #include <QLabel>
 #include <QPushButton>
 #include <QStringList>
 #include <QElapsedTimer>
+#include <QTextEdit>       // <-- Добавлено для лога
+#include <QFont>
 #include <cmath>
 
 #ifndef M_PI
@@ -31,11 +34,10 @@ static QString complexToString(const std::complex<double>& c) {
         .arg(std::abs(c.imag()), 0, 'f', 4);
 }
 
-// Генерация сигнала Y = cos(freq1*x) + sin(freq2*x)
 static QVector<double> generateSignal(int N, double freq1, double freq2) {
     QVector<double> signal(N);
     for (int n = 0; n < N; ++n) {
-        double x = 2.0 * M_PI * n / N;  // x от 0 до 2π
+        double x = 2.0 * M_PI * n / N;
         signal[n] = std::cos(freq1 * x) + std::sin(freq2 * x);
     }
     return signal;
@@ -48,19 +50,23 @@ static QVector<double> generateSignal(int N, double freq1, double freq2) {
 QString Task1DirectFft::description() const {
     return "Выполнить прямое БПФ для сигнала Y = cos(2x) + sin(5x).\n\n"
         "В амплитудном спектре должны наблюдаться два пика:\n"
-        "• на частоте k = 2 (от косинусной составляющей)\n"
-        "• на частоте k = 5 (от синусной составляющей)\n\n"
-        "Изменяйте количество отсчётов N (должно быть степенью двойки) "
-        "и наблюдайте, как меняется разрешение по частоте.";
+        "• на частотном индексе k = 2 (от косинусной составляющей)\n"
+        "• на частотном индексе k = 5 (от синусной составляющей)\n\n"
+        "Изменяйте количество отсчётов N и наблюдайте за числовыми значениями в логе.";
 }
 
 QWidget* Task1DirectFft::createWidget(QWidget* parent) {
     auto* widget = new QWidget(parent);
-    auto* layout = new QVBoxLayout(widget);
+    auto* layout = new QGridLayout(widget);
 
     auto* spectrumWidget = new SpectrumPlotWidget;
     auto* timeLabel = new QLabel("Время расчёта: - мс");
     timeLabel->setStyleSheet("color: blue; font-weight: bold;");
+
+    // === ЛОГ С РЕЗУЛЬТАТАМИ ===
+    auto* logEdit = new QTextEdit;
+    logEdit->setReadOnly(true);
+    logEdit->setFont(QFont("Consolas", 9));
 
     auto* formWidget = new QWidget;
     auto* nSpin = new QSpinBox;
@@ -74,14 +80,12 @@ QWidget* Task1DirectFft::createWidget(QWidget* parent) {
     freq1Spin->setValue(2.0);
     freq1Spin->setDecimals(1);
     freq1Spin->setSingleStep(1.0);
-    freq1Spin->setToolTip("Частота косинусной составляющей");
 
     auto* freq2Spin = new QDoubleSpinBox;
     freq2Spin->setRange(0.0, 50.0);
     freq2Spin->setValue(5.0);
     freq2Spin->setDecimals(1);
     freq2Spin->setSingleStep(1.0);
-    freq2Spin->setToolTip("Частота синусной составляющей");
 
     auto* formLayout = new QFormLayout(formWidget);
     formLayout->addRow("Количество отсчётов (N):", nSpin);
@@ -93,15 +97,16 @@ QWidget* Task1DirectFft::createWidget(QWidget* parent) {
     splitter->setChildrenCollapsible(false);
     splitter->addWidget(formWidget);
     splitter->addWidget(spectrumWidget);
-    splitter->setStretchFactor(1, 1);
-    layout->addWidget(splitter);
+    splitter->setStretchFactor(2, 1);
+    layout->addWidget(splitter, 0, 0);
+    layout->addWidget(logEdit, 0, 1);
+    layout->setColumnStretch(0, 1);
+    layout->setColumnStretch(1, 0);
 
     auto compute = [=]() {
         int N = nSpin->value();
 
-        // Проверяем, что N — степень двойки
         if (!FftAlgorithms::isPowerOfTwo(N)) {
-            // Автоматически округляем до ближайшей степени двойки
             int rounded = 1;
             while (rounded < N) rounded <<= 1;
             nSpin->setValue(rounded);
@@ -110,10 +115,10 @@ QWidget* Task1DirectFft::createWidget(QWidget* parent) {
 
         double freq1 = freq1Spin->value();
         double freq2 = freq2Spin->value();
+
         QVector<double> signal = generateSignal(N, freq1, freq2);
         QVector<double> timeAxis(N);
-        for (int i = 0; i < N; ++i)
-            timeAxis[i] = i;
+        for (int i = 0; i < N; ++i) timeAxis[i] = i;
 
         QElapsedTimer timer;
         timer.start();
@@ -122,10 +127,37 @@ QWidget* Task1DirectFft::createWidget(QWidget* parent) {
 
         qint64 elapsedNs = timer.nsecsElapsed();
         double elapsedMs = elapsedNs / 1000000.0;
-        timeLabel->setText(QString("Время расчёта БПФ (N=%1): %2 мс").arg(N).arg(elapsedMs, 0, 'f', 4));
+        timeLabel->setText(QString("Время расчёта БПФ: <b>%1 мс</b>").arg(elapsedMs, 0, 'f', 4));
 
-        spectrumWidget->plotTimeDomain(timeAxis, signal, QString("Y = cos(%1x) + sin(%2x)").arg(freq1).arg(freq2).arg(N));
-        spectrumWidget->plotSpectrum(fftResult);
+        QString html;
+        html += "<table style='border-collapse: collapse; width: 100%; font-family: monospace; font-size: 14px; text-align: center;'>";
+        html += "<tr style='background-color: #f0f0f0; border-bottom: 2px solid #ccc;'>"
+            "<th style='padding: 8px;'>k</th>"
+            "<th style='padding: 8px;'>Амплитуда</th>"
+            "<th style='padding: 8px;'>Фаза (рад)</th>"
+            "<th style='padding: 8px;'>Фаза (град)</th>"
+            "</tr>";
+
+        for (int k = 0; k < N; ++k) {
+            double amp = std::abs(fftResult.spectrum[k]) / N;
+            double phase = (amp < 1e-10) ? 0.0 : std::arg(fftResult.spectrum[k]);
+            double phaseDeg = phase * 180.0 / M_PI;
+            QString style = (amp > 1e-3) ? "style='background-color: #e6f9e6; font-weight: bold;'" : "style='color: #999;'";
+
+            html += QString("<tr %1>").arg(style);
+            html += QString("<td style='padding: 6px; border-bottom: 1px solid #eee;'>%1</td>").arg(k);
+            html += QString("<td style='padding: 6px; border-bottom: 1px solid #eee;'>%1</td>").arg(amp, 0, 'f', 4);
+            html += QString("<td style='padding: 6px; border-bottom: 1px solid #eee;'>%1</td>").arg(phase, 0, 'f', 4);
+            html += QString("<td style='padding: 6px; border-bottom: 1px solid #eee;'>%1</td>").arg(phaseDeg, 0, 'f', 2);
+            html += "</tr>";
+        }
+        html += "</table>";
+        logEdit->setHtml(html);
+
+        spectrumWidget->plotTimeDomain(timeAxis, signal,
+            QString("Y = cos(%1x) + sin(%2x), N = %3").arg(freq1).arg(freq2).arg(N));
+
+        spectrumWidget->plotSpectrum(fftResult, 1.0, false);
         };
 
     compute();
